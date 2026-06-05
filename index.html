@@ -108,7 +108,7 @@
                     chartT.series[0].addPoint([x, val], true, false, true);
                 }
 
-                if (val > 45) { // Kritik sıcaklık eşiği
+                if (val > 30) { // Kritik sıcaklık eşiği
                     document.getElementById('uyari').style.display = 'block';
                     gosterge.style.color = '#e74c3c';
                 } else {

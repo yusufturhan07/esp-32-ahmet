@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trafo Sıcaklık Takip Sistemi</title>
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f4;
+            margin-top: 50px;
+        }
+
+        .main-card {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            display: inline-block;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        #sicaklikGosterge {
+            font-size: 80px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin: 15px 0;
+            transition: color 0.3s;
+        }
+
+        .birim {
+            font-size: 30px;
+            color: #7f8c8d;
+        }
+
+        #uyari {
+            display: none;
+            color: white;
+            background: #e74c3c;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 18px;
+            animation: blink 1s infinite;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+        }
+
+        @keyframes blink {
+            50% {
+                opacity: 0.7;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="main-card">
+        <h2>Trafo Anlık Sıcaklık</h2>
+        <div id="uyari">⚠️ KRİTİK SICAKLIK SEVİYESİ!</div>
+        <div id="sicaklikGosterge">--<span class="birim">°C</span></div>
+        <div id="chart-container" style="width: 400px; height: 300px; margin-top:20px;"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        // Senin projene ait Firebase konfigürasyonu
+        const firebaseConfig = {
+            apiKey: "AIzaSyCzli9LUOi3QAilQmDZJWHOkqdFYYyO4Ug",
+            authDomain: "esp32-proje-final.firebaseapp.com",
+            databaseURL: "https://esp32-proje-final-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "esp32-proje-final",
+            storageBucket: "esp32-proje-final.firebasestorage.app",
+            messagingSenderId: "553294897518",
+            appId: "1:553294897518:web:c66ed258f3f44a8503a17f",
+            measurementId: "G-DX91TGPMD6"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // Highcharts Grafik Ayarları
+        var chartT = new Highcharts.Chart({
+            chart: { renderTo: 'chart-container' },
+            title: { text: 'Sıcaklık Geçmişi' },
+            series: [{ name: 'Sıcaklık', data: [], color: '#3498db' }],
+            xAxis: { type: 'datetime' },
+            yAxis: { title: { text: 'Derece (°C)' } },
+            credits: { enabled: false }
+        });
+
+        const tempRef = ref(db, 'sensor/anlikSicaklik');
+
+        onValue(tempRef, (snapshot) => {
+            const val = snapshot.val();
+            if (val !== null) {
+                const gosterge = document.getElementById('sicaklikGosterge');
+                gosterge.innerHTML = val.toFixed(1) + '<span class="birim">°C</span>';
+
+                var x = (new Date()).getTime();
+                if (chartT.series[0].data.length > 20) {
+                    chartT.series[0].addPoint([x, val], true, true, true);
+                } else {
+                    chartT.series[0].addPoint([x, val], true, false, true);
+                }
+
+                if (val > 45) { // Kritik sıcaklık eşiği
+                    document.getElementById('uyari').style.display = 'block';
+                    gosterge.style.color = '#e74c3c';
+                } else {
+                    document.getElementById('uyari').style.display = 'none';
+                    gosterge.style.color = '#2c3e50';
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>
